@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nmpz.dev</title>
+    <style>
+        :root {
+            --ui-bg: #0f172a; /* slate-900 */
+            --ui-fg: #e2e8f0; /* slate-200 */
+            --accent: #22c55e; /* green-500 */
+            --danger: #ef4444; /* red-500 */
+            --warn: #f59e0b;  /* amber-500 */
+            --muted: #334155; /* slate-700 */
+            --shadow: 0 10px 30px rgba(0,0,0,.35);
+        }
+
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body { background: #000; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color: var(--ui-fg); }
+
+        /* Layout */
+        #app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+
+        /* Frozen Street View container */
+        #panoStillWrap { position: absolute; inset: 0; background: #000; }
+        #panoLive { position: absolute; inset: 0; pointer-events: none; } /* acts like a still */
+
+        /* HUD */
+        .hud { position: fixed; left: 16px; top: 16px; display: flex; align-items: center; gap: 10px; z-index: 20; background: rgba(15, 23, 42, .72); padding: 10px 12px; border-radius: 12px; box-shadow: var(--shadow); backdrop-filter: blur(6px); }
+        .badge { background: var(--muted); color: #fff; border-radius: 999px; padding: 6px 10px; font-weight: 700; font-size: 13px; letter-spacing: .2px; }
+        .score { font-weight: 800; font-size: 16px; }
+
+        /* Simple, reliable compass */
+        .compass { position: fixed; right: 16px; top: 16px; z-index: 35; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .compass .dial {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid rgba(226, 232, 240, 0.3);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(8px);
+        }
+        .compass .needle-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 28px;
+            transform: translate(-50%, -100%);
+            transform-origin: 50% 100%;
+            transition: transform 0.4s ease-out;
+        }
+        .compass .needle {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, #666 0%, #ff4444 100%);
+            border-radius: 1px 1px 0 0;
+            position: relative;
+        }
+        .compass .needle::before {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+            transform: translateX(-50%);
+        }
+        .compass .cardinal {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        .compass .n { top: 4px; left: 50%; transform: translateX(-50%); color: #ff6b6b; }
+        .compass .e { right: 4px; top: 50%; transform: translateY(-50%); }
+        .compass .s { bottom: 4px; left: 50%; transform: translateX(-50%); }
+        .compass .w { left: 4px; top: 50%; transform: translateY(-50%); }
+        .compass .readout {
+            font-size: 13px;
+            font-weight: 700;
+            background: rgba(15,23,42,.85);
+            padding: 6px 12px;
+            border-radius: 999px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(226,232,240,0.1);
+            backdrop-filter: blur(6px);
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* Guess/Next button */
+        .controls { position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; z-index: 25; display: flex; gap: 10px; }
+        .btn { appearance: none; border: none; border-radius: 999px; padding: 12px 18px; font-weight: 800; letter-spacing: .3px; cursor: pointer; color: #0b1324; background: #fff; box-shadow: var(--shadow); transition: transform .08s ease, filter .2s ease; }
+        .btn:active { transform: translateY(1px) scale(.98); }
+        .btn.primary { background: var(--accent); color: white; }
+        .btn.warn { background: var(--warn); color: #1f2937; }
+
+        /* Result card */
+        .resultCard { position: fixed; right: 16px; top: 130px; z-index: 30; background: rgba(15, 23, 42, .85); padding: 12px 14px; border-radius: 12px; box-shadow: var(--shadow); display: none; }
+        .resultCard.show { display: block; }
+        .resultRow { display: flex; gap: 10px; align-items: baseline; }
+        .resultRow b { font-size: 14px; }
+
+        /* Map */
+        .mapWrap {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 40;
+            background: #fff;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: width .25s cubic-bezier(0.4, 0, 0.2, 1), height .25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mapWrap .toolbar { position: absolute; display: flex; gap: 6px; left: 10px; top: 10px; z-index: 5; }
+        .mapWrap .toolbtn { appearance: none; border: 0; border-radius: 8px; padding: 6px 8px; font-weight: 800; cursor: pointer; background: rgba(15,23,42,.8); color: #fff; }
+        .mapWrap .toolbtn:active { transform: translateY(1px); }
+        #map { width: 100%; height: 100%; }
+
+        /* Crosshair cursor on map */
+        .mapWrap:hover { cursor: crosshair; }
+
+        /* Large map for results */
+        .mapWrap.reveal {
+            width: 65vw !important;
+            height: 70vh !important;
+            right: 20px;
+            bottom: 20px;
+            max-width: 900px;
+            max-height: 700px;
+        }
+
+        /* Attribution */
+        .foot { position: fixed; left: 16px; bottom: 16px; color: #cbd5e1; font-size: 12px; opacity: .8; z-index: 10; }
+
+        .muted { opacity: .85 }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="panoStillWrap">
+        <div id="panoLive"></div>
+    </div>
+
+    <!-- HUD (round + total score) -->
+    <div class="hud" id="hud">
+        <span class="badge">Round <span id="roundNum">1</span></span>
+        <span class="badge score">Total: <span id="totalScore">0</span></span>
+    </div>
+
+    <!-- Compass -->
+    <div class="compass" aria-label="Compass">
+        <div class="dial">
+            <div class="needle-container" id="needleContainer">
+                <div class="needle"></div>
+            </div>
+            <div class="cardinal n">N</div>
+            <div class="cardinal e">E</div>
+            <div class="cardinal s">S</div>
+            <div class="cardinal w">W</div>
+        </div>
+        <div class="readout" id="compassReadout">N (0°)</div>
+    </div>
+
+    <!-- Result card -->
+    <div class="resultCard" id="resultCard">
+        <div class="resultRow"><b>Distance:</b> <span id="distanceKm">—</span> km</div>
+        <div class="resultRow"><b>Round score:</b> <span id="roundScore">—</span></div>
+    </div>
+
+    <!-- Floating map -->
+    <div class="mapWrap" id="mapWrap" aria-label="Guess map (hover to expand)">
+        <div class="toolbar">
+            <button class="toolbtn" id="clearBtn" title="Clear guess">×</button>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <div class="controls">
+    </div>
+</div>
+
+<!-- Prompt for API key and load Google Maps script dynamically -->
+<script>
+    let API_KEY = window.localStorage.getItem('gmaps_api_key');
+    console.log(API_KEY)
+
+    function loadGoogleMapsScript(key) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&callback=initGame`;
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+    }
+
+    window.addEventListener('load', () => {
+        if (API_KEY) {
+            loadGoogleMapsScript(API_KEY);
+            return;
+        }
+
+        API_KEY = prompt("Enter your Google Maps API key to play:");
+        if (!API_KEY) {
+            alert("API key is required to play.");
+            return;
+        }
+        window.localStorage.setItem('gmaps_api_key', API_KEY);
+        loadGoogleMapsScript(API_KEY);
+    });
+</script>
+
+<!-- Game logic -->
+<script>
+    // ---------- Config ----------
+    const SMALL_SIZE = { w: 260, h: 180 };
+    const EXPANDED_SIZE = { w: 1200, h: 700 }; // Larger expanded size
+    let pano; // StreetViewPanorama
+
+    // ---------- State ----------
+    let map, svService, guessMarker, trueMarker, line, phase = 'guess';
+    let trueLatLng = null; // google.maps.LatLng
+    let round = 0; let totalScore = 0;
+    let currentPanoId = null; let currentHeading = 0; let currentPitch = 0;
+
+    // ---------- Elements ----------
+    const roundNumEl = document.getElementById('roundNum');
+    const totalScoreEl = document.getElementById('totalScore');
+    const distanceKmEl = document.getElementById('distanceKm');
+    const roundScoreEl = document.getElementById('roundScore');
+    const resultCard = document.getElementById('resultCard');
+    const mapWrap = document.getElementById('mapWrap');
+    const clearBtn = document.getElementById('clearBtn');
+    const needleContainer = document.getElementById('needleContainer');
+    const compassReadoutEl = document.getElementById('compassReadout');
+
+    // ---------- Helpers ----------
+    const randBetween = (min, max) => Math.random() * (max - min) + min;
+    const deg2rad = d => d * Math.PI / 180;
+    function haversineDistanceKm(a, b) {
+        const R = 6371; // km
+        const dLat = deg2rad(b.lat() - a.lat());
+        const dLng = deg2rad(b.lng() - a.lng());
+        const lat1 = deg2rad(a.lat());
+        const lat2 = deg2rad(b.lat());
+        const sinDLat = Math.sin(dLat/2), sinDLng = Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(sinDLat*sinDLat + Math.cos(lat1)*Math.cos(lat2)*sinDLng*sinDLng), Math.sqrt(1 - (sinDLat*sinDLat + Math.cos(lat1)*Math.cos(lat2)*sinDLng*sinDLng)));
+        return R * c;
+    }
+    function scoreFromDistanceKm(d) {
+        const s = Math.round(5000 * Math.exp(-d / 2000));
+        return Math.max(0, Math.min(5000, s));
+    }
+
+    function setPhase(newPhase) {
+        phase = newPhase;
+        if (phase === 'guess') {
+            resultCard.classList.remove('show');
+            // Return map to normal size
+            mapWrap.classList.remove('reveal');
+            applyMapSize(false);
+        } else {
+            resultCard.classList.add('show');
+        }
+    }
+
+    function applyMapSize(hovering = false) {
+        if (mapWrap.classList.contains('reveal')) {
+            // Let CSS handle reveal size
+            if (map) setTimeout(() => google.maps.event.trigger(map, 'resize'), 50);
+            return;
+        }
+        const target = hovering ? EXPANDED_SIZE : SMALL_SIZE;
+        mapWrap.style.width = target.w + 'px';
+        mapWrap.style.height = target.h + 'px';
+        if (map) setTimeout(() => google.maps.event.trigger(map, 'resize'), 50);
+    }
+
+    function clearGuess() {
+        if (guessMarker) { guessMarker.setMap(null); guessMarker = null; }
+        if (line) { line.setMap(null); line = null; }
+    }
+
+    function headingToCardinal(h) {
+        const dirs = ['N','NE','E','SE','S','SW','W','NW','N'];
+        return dirs[Math.round(((h % 360) / 45))];
+    }
+
+    function updateCompass() {
+        // Rotate the needle container so needle points north relative to camera heading
+        // If camera faces north (0°), needle should point up (0°)
+        // If camera faces east (90°), needle should point left (-90°)
+        const rotation = currentHeading; // degrees
+        needleContainer.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
+        compassReadoutEl.textContent = `${headingToCardinal(currentHeading)} (${Math.round((currentHeading%360+360)%360)}°)`;
+    }
+
+    function reveal() {
+        if (!guessMarker || !trueLatLng) return; // require a guess
+        // Draw true location
+        if (trueMarker) trueMarker.setMap(null);
+        trueMarker = new google.maps.Marker({ position: trueLatLng, map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#10b981', fillOpacity: 1, strokeColor: '#0f766e', strokeWeight: 2 } });
+
+        // Line between guess and true
+        line = new google.maps.Polyline({
+            map,
+            path: [ guessMarker.getPosition(), trueLatLng ],
+            geodesic: true,
+            strokeOpacity: 1,
+            strokeWeight: 3
+        });
+
+        const distKm = haversineDistanceKm(guessMarker.getPosition(), trueLatLng);
+        const roundScore = scoreFromDistanceKm(distKm);
+        totalScore += roundScore;
+        distanceKmEl.textContent = distKm.toFixed(1);
+        roundScoreEl.textContent = roundScore.toString();
+        totalScoreEl.textContent = totalScore.toString();
+
+        // Expand map to large size and fit both points
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(guessMarker.getPosition());
+        bounds.extend(trueLatLng);
+        mapWrap.classList.add('reveal');
+        // Give the CSS transition a moment, then resize & fit
+        setTimeout(() => {
+            google.maps.event.trigger(map, 'resize');
+            map.fitBounds(bounds, 80);
+        }, 300); // slightly > .25s CSS transition
+
+        setPhase('reveal');
+    }
+
+    // Angle helpers
+    const norm360 = d => (d % 360 + 360) % 360;
+    const angDiff = (a, b) => {
+        const d = Math.abs(norm360(a) - norm360(b));
+        return d > 180 ? 360 - d : d;
+    };
+
+    // Estimate road direction from links, then return a perpendicular heading (±90°)
+    function perpendicularToRoad(links) {
+        if (!links || links.length === 0) {
+            return Math.floor(Math.random() * 360);
+        }
+        if (links.length >= 2) {
+            let i = 0, j = 1, best = 0;
+            for (let a = 0; a < links.length; a++) {
+                for (let b = a + 1; b < links.length; b++) {
+                    const sep = angDiff(links[a].heading, links[b].heading);
+                    if (sep > best) { best = sep; i = a; j = b; }
+                }
+            }
+            const h1 = norm360(links[i].heading);
+            const h2 = norm360(links[j].heading);
+            let mid = norm360(h1 + angDiff(h1, h2) / 2);
+            const d = norm360(h2 - h1);
+            if (d > 180) mid = norm360(mid + 180);
+            const side = Math.random() < 0.5 ? -90 : 90; // perpendicular ±90°
+            return norm360(mid + side);
+        }
+        const road = links[0].heading;
+        const side = Math.random() < 0.5 ? -90 : 90;
+        return norm360(road + side);
+    }
+
+    function nextRound() {
+        setPhase('guess');
+        clearGuess();
+        if (trueMarker) { trueMarker.setMap(null); trueMarker = null; }
+
+        map.setZoom(2);
+        map.setCenter({ lat: 20, lng: 0 });
+        round += 1; roundNumEl.textContent = String(round);
+
+        findRandomPano().then(({ panoId, location, links }) => {
+            currentPanoId = panoId;
+            trueLatLng = location.latLng;
+
+            currentHeading = perpendicularToRoad(links);
+            currentPitch = Math.floor(randBetween(-5, 5)); // gentle tilt
+
+            pano.setPano(currentPanoId);
+            pano.setZoom(0); // widest FOV
+            pano.setPov({ heading: currentHeading, pitch: currentPitch });
+            pano.setVisible(true);
+
+            updateCompass();
+        }).catch(err => {
+            console.error('Failed to load pano', err);
+            alert('Could not find a Street View location. Try again.');
+        });
+    }
+
+    async function findRandomPano() {
+        // Weighted random regions to bias toward land/roads
+        const regions = [
+            // [minLat, maxLat, minLng, maxLng, weight]
+            [-56, -10, -75, -35, 0.8],   // South America chunk
+            [-35,  37, -20,  55, 1.0],   // Africa + Middle East
+            [  5,  60, -130, -60, 1.0],  // North America
+            [ 30,  72,  -10,  40, 1.2],  // Europe
+            [ -45,  10, 110, 155, 0.7],  // Australia + NZ
+            [  5,  50,  65, 150, 1.0],   // Asia
+        ];
+        const totalW = regions.reduce((s, r) => s + r[4], 0);
+        const pick = Math.random() * totalW;
+        let acc = 0, chosen = regions[0];
+        for (const r of regions) { acc += r[4]; if (pick <= acc) { chosen = r; break; } }
+
+        const maxTries = 40;
+        for (let i = 0; i < maxTries; i++) {
+            const lat = randBetween(chosen[0], chosen[1]);
+            const lng = randBetween(chosen[2], chosen[3]);
+            const loc = new google.maps.LatLng(lat, lng);
+            try {
+                const data = await svGetPanorama({ location: loc, radius: 50000, source: google.maps.StreetViewSource.OUTDOOR });
+                if (data && data.location && data.location.pano) {
+                    return { panoId: data.location.pano, location: data.location, links: data.links || [] };
+                }
+            } catch (e) { /* keep trying */ }
+        }
+        throw new Error('No pano found after many tries');
+    }
+
+    function svGetPanorama(opts) {
+        return new Promise((resolve, reject) => {
+            svService.getPanorama(opts, (data, status) => {
+                if (status === google.maps.StreetViewStatus.OK) resolve(data);
+                else reject(status);
+            });
+        });
+    }
+
+    function initPanorama() {
+        pano = new google.maps.StreetViewPanorama(document.getElementById('panoLive'), {
+            addressControl: false,
+            linksControl: false,
+            panControl: false,
+            zoomControl: false,
+            fullscreenControl: false,
+            motionTracking: false,
+            motionTrackingControl: false,
+            clickToGo: false,
+            visible: true
+        });
+    }
+
+    // ---------- Init ----------
+    window.initGame = function initGame() {
+        // Map
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: 20, lng: 0 },
+            zoom: 2,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            gestureHandling: 'greedy',
+            draggableCursor: 'crosshair',
+            styles: null // default light mode
+        });
+
+        svService = new google.maps.StreetViewService();
+
+        map.addListener('click', (e) => {
+            if (phase !== 'guess') return;
+            if (guessMarker) guessMarker.setMap(null);
+            guessMarker = new google.maps.Marker({
+                position: e.latLng,
+                map,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 6,                // size of the dot
+                    fillColor: '#f59e0b',    // amber
+                    fillOpacity: 1,
+                    strokeColor: '#7c2d12',  // darker ring
+                    strokeWeight: 2
+                }
+            });
+        });
+
+        initPanorama();
+
+        // Expand-on-hover behavior
+        applyMapSize(false);
+        mapWrap.addEventListener('mouseenter', () => applyMapSize(true));
+        mapWrap.addEventListener('mouseleave', () => applyMapSize(false));
+        clearBtn.addEventListener('click', () => clearGuess());
+
+        // Space bar to Guess/Next
+        window.addEventListener('keydown', (ev) => {
+            if (ev.code === 'Space') {
+                ev.preventDefault();
+                if (phase === 'guess') {
+                    reveal();
+                } else {
+                    nextRound();
+                }
+            }
+        });
+
+        // Resize handling: keep map & pano happy
+        window.addEventListener('resize', () => {
+            applyMapSize(mapWrap.matches(':hover'));
+            if (pano) pano.setPov(pano.getPov());
+        });
+
+        // Start game
+        nextRound();
+    }
+</script>
+</body>
+</html>
