@@ -413,10 +413,7 @@
 
     <!-- Floating map -->
     <div class="mapWrap" id="mapWrap" aria-label="Guess map (hover to expand)">
-        <div class="toolbar">
-            <button class="toolbtn" id="clearBtn" title="Clear guess">×</button>
-        </div>
-        <div id="map"></div>
+        <div id="map" />
     </div>
 
     <div class="controls">
@@ -768,7 +765,6 @@
         applyMapSize(false);
         mapWrap.addEventListener('mouseenter', () => applyMapSize(true));
         mapWrap.addEventListener('mouseleave', () => applyMapSize(false));
-        clearBtn.addEventListener('click', () => clearGuess());
 
         window.addEventListener('keydown', (ev) => {
             if (ev.code === 'Space') {
