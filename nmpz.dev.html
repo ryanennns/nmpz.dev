@@ -26,6 +26,40 @@
         #panoStillWrap { position: absolute; inset: 0; background: #000; }
         #panoLive { position: absolute; inset: 0; pointer-events: none; } /* acts like a still */
 
+        /* Loading Spinner */
+        .loading-spinner {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+        .loading-spinner.show {
+            display: flex;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(34, 197, 94, 0.3);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loading-text {
+            margin-top: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ui-fg);
+            opacity: 0.9;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* HUD */
         .hud { position: fixed; left: 16px; top: 16px; display: flex; align-items: center; gap: 10px; z-index: 20; background: rgba(15, 23, 42, .72); padding: 10px 12px; border-radius: 12px; box-shadow: var(--shadow); backdrop-filter: blur(6px); }
         .badge { background: var(--muted); color: #fff; border-radius: 999px; padding: 6px 10px; font-weight: 700; font-size: 13px; letter-spacing: .2px; }
@@ -150,6 +184,14 @@
         <div id="panoLive"></div>
     </div>
 
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading location...</div>
+        </div>
+    </div>
+
     <!-- HUD (round + total score) -->
     <div class="hud" id="hud">
         <span class="badge">Round <span id="roundNum">1</span></span>
@@ -240,6 +282,16 @@
     const clearBtn = document.getElementById('clearBtn');
     const needleContainer = document.getElementById('needleContainer');
     const compassReadoutEl = document.getElementById('compassReadout');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    // ---------- Loading Functions ----------
+    function showLoading() {
+        loadingSpinner.classList.add('show');
+    }
+
+    function hideLoading() {
+        loadingSpinner.classList.remove('show');
+    }
 
     // ---------- Helpers ----------
     const randBetween = (min, max) => Math.random() * (max - min) + min;
@@ -380,6 +432,9 @@
         map.setCenter({ lat: 20, lng: 0 });
         round += 1; roundNumEl.textContent = String(round);
 
+        // Show loading spinner
+        showLoading();
+
         findRandomPano().then(({ panoId, location, links }) => {
             currentPanoId = panoId;
             trueLatLng = location.latLng;
@@ -393,7 +448,13 @@
             pano.setVisible(true);
 
             updateCompass();
+
+            // Hide loading spinner after a small delay to ensure panorama has loaded
+            setTimeout(() => {
+                hideLoading();
+            }, 500);
         }).catch(err => {
+            hideLoading();
             console.error('Failed to load pano', err);
             alert('Could not find a Street View location. Try again.');
         });
