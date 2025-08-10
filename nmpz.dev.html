@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>nmpz.dev</title>
     <style>
         :root {
@@ -10,21 +10,48 @@
             --ui-fg: #e2e8f0; /* slate-200 */
             --accent: #22c55e; /* green-500 */
             --danger: #ef4444; /* red-500 */
-            --warn: #f59e0b;  /* amber-500 */
+            --warn: #f59e0b; /* amber-500 */
             --muted: #334155; /* slate-700 */
-            --shadow: 0 10px 30px rgba(0,0,0,.35);
+            --shadow: 0 10px 30px rgba(0, 0, 0, .35);
         }
 
-        * { box-sizing: border-box; }
-        html, body { height: 100%; margin: 0; }
-        body { background: #000; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color: var(--ui-fg); }
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            background: #000;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            color: var(--ui-fg);
+        }
 
         /* Layout */
-        #app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        #app {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
 
         /* Frozen Street View container */
-        #panoStillWrap { position: absolute; inset: 0; background: #000; }
-        #panoLive { position: absolute; inset: 0; pointer-events: none; } /* acts like a still */
+        #panoStillWrap {
+            position: absolute;
+            inset: 0;
+            background: #000;
+        }
+
+        #panoLive {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        /* acts like a still */
 
         /* Loading Spinner */
         .loading-spinner {
@@ -37,9 +64,17 @@
             z-index: 100;
             backdrop-filter: blur(4px);
         }
+
         .loading-spinner.show {
             display: flex;
         }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
         .spinner {
             width: 40px;
             height: 40px;
@@ -48,6 +83,7 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+
         .loading-text {
             margin-top: 16px;
             font-size: 14px;
@@ -55,18 +91,59 @@
             color: var(--ui-fg);
             opacity: 0.9;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* HUD */
-        .hud { position: fixed; left: 16px; top: 16px; display: flex; align-items: center; gap: 10px; z-index: 20; background: rgba(15, 23, 42, .72); padding: 10px 12px; border-radius: 12px; box-shadow: var(--shadow); backdrop-filter: blur(6px); }
-        .badge { background: var(--muted); color: #fff; border-radius: 999px; padding: 6px 10px; font-weight: 700; font-size: 13px; letter-spacing: .2px; }
-        .score { font-weight: 800; font-size: 16px; }
+        .hud {
+            position: fixed;
+            left: 16px;
+            top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 20;
+            background: rgba(15, 23, 42, .72);
+            padding: 10px 12px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(6px);
+        }
+
+        .badge {
+            background: var(--muted);
+            color: #fff;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: .2px;
+        }
+
+        .score {
+            font-weight: 800;
+            font-size: 16px;
+        }
 
         /* Simple, reliable compass */
-        .compass { position: fixed; right: 16px; top: 16px; z-index: 35; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .compass {
+            position: fixed;
+            right: 16px;
+            top: 16px;
+            z-index: 35;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
         .compass .dial {
             position: relative;
             width: 80px;
@@ -77,6 +154,7 @@
             box-shadow: var(--shadow);
             backdrop-filter: blur(8px);
         }
+
         .compass .needle-container {
             position: absolute;
             top: 50%;
@@ -87,6 +165,7 @@
             transform-origin: 50% 100%;
             transition: transform 0.4s ease-out;
         }
+
         .compass .needle {
             width: 100%;
             height: 100%;
@@ -94,6 +173,7 @@
             border-radius: 1px 1px 0 0;
             position: relative;
         }
+
         .compass .needle::before {
             content: '';
             position: absolute;
@@ -105,42 +185,118 @@
             border-radius: 50%;
             transform: translateX(-50%);
         }
+
         .compass .cardinal {
             position: absolute;
             font-size: 12px;
             font-weight: bold;
             color: #fff;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
         }
-        .compass .n { top: 4px; left: 50%; transform: translateX(-50%); color: #ff6b6b; }
-        .compass .e { right: 4px; top: 50%; transform: translateY(-50%); }
-        .compass .s { bottom: 4px; left: 50%; transform: translateX(-50%); }
-        .compass .w { left: 4px; top: 50%; transform: translateY(-50%); }
+
+        .compass .n {
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff6b6b;
+        }
+
+        .compass .e {
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .compass .s {
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .compass .w {
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
         .compass .readout {
             font-size: 13px;
             font-weight: 700;
-            background: rgba(15,23,42,.85);
+            background: rgba(15, 23, 42, .85);
             padding: 6px 12px;
             border-radius: 999px;
             box-shadow: var(--shadow);
-            border: 1px solid rgba(226,232,240,0.1);
+            border: 1px solid rgba(226, 232, 240, 0.1);
             backdrop-filter: blur(6px);
             min-width: 80px;
             text-align: center;
         }
 
         /* Guess/Next button */
-        .controls { position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; z-index: 25; display: flex; gap: 10px; }
-        .btn { appearance: none; border: none; border-radius: 999px; padding: 12px 18px; font-weight: 800; letter-spacing: .3px; cursor: pointer; color: #0b1324; background: #fff; box-shadow: var(--shadow); transition: transform .08s ease, filter .2s ease; }
-        .btn:active { transform: translateY(1px) scale(.98); }
-        .btn.primary { background: var(--accent); color: white; }
-        .btn.warn { background: var(--warn); color: #1f2937; }
+        .controls {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 20px;
+            z-index: 25;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            appearance: none;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 800;
+            letter-spacing: .3px;
+            cursor: pointer;
+            color: #0b1324;
+            background: #fff;
+            box-shadow: var(--shadow);
+            transition: transform .08s ease, filter .2s ease;
+        }
+
+        .btn:active {
+            transform: translateY(1px) scale(.98);
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn.warn {
+            background: var(--warn);
+            color: #1f2937;
+        }
 
         /* Result card */
-        .resultCard { position: fixed; right: 16px; top: 130px; z-index: 30; background: rgba(15, 23, 42, .85); padding: 12px 14px; border-radius: 12px; box-shadow: var(--shadow); display: none; }
-        .resultCard.show { display: block; }
-        .resultRow { display: flex; gap: 10px; align-items: baseline; }
-        .resultRow b { font-size: 14px; }
+        .resultCard {
+            position: fixed;
+            right: 16px;
+            top: 130px;
+            z-index: 30;
+            background: rgba(15, 23, 42, .85);
+            padding: 12px 14px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .resultCard.show {
+            display: block;
+        }
+
+        .resultRow {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+        }
+
+        .resultRow b {
+            font-size: 14px;
+        }
 
         /* Map */
         .mapWrap {
@@ -154,13 +310,40 @@
             box-shadow: var(--shadow);
             transition: width .25s cubic-bezier(0.4, 0, 0.2, 1), height .25s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .mapWrap .toolbar { position: absolute; display: flex; gap: 6px; left: 10px; top: 10px; z-index: 5; }
-        .mapWrap .toolbtn { appearance: none; border: 0; border-radius: 8px; padding: 6px 8px; font-weight: 800; cursor: pointer; background: rgba(15,23,42,.8); color: #fff; }
-        .mapWrap .toolbtn:active { transform: translateY(1px); }
-        #map { width: 100%; height: 100%; }
+
+        .mapWrap .toolbar {
+            position: absolute;
+            display: flex;
+            gap: 6px;
+            left: 10px;
+            top: 10px;
+            z-index: 5;
+        }
+
+        .mapWrap .toolbtn {
+            appearance: none;
+            border: 0;
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-weight: 800;
+            cursor: pointer;
+            background: rgba(15, 23, 42, .8);
+            color: #fff;
+        }
+
+        .mapWrap .toolbtn:active {
+            transform: translateY(1px);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
 
         /* Crosshair cursor on map */
-        .mapWrap:hover { cursor: crosshair; }
+        .mapWrap:hover {
+            cursor: crosshair;
+        }
 
         /* Large map for results */
         .mapWrap.reveal {
@@ -173,9 +356,19 @@
         }
 
         /* Attribution */
-        .foot { position: fixed; left: 16px; bottom: 16px; color: #cbd5e1; font-size: 12px; opacity: .8; z-index: 10; }
+        .foot {
+            position: fixed;
+            left: 16px;
+            bottom: 16px;
+            color: #cbd5e1;
+            font-size: 12px;
+            opacity: .8;
+            z-index: 10;
+        }
 
-        .muted { opacity: .85 }
+        .muted {
+            opacity: .85
+        }
     </style>
 </head>
 <body>
@@ -186,7 +379,7 @@
 
     <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner">
-        <div style="text-align: center;">
+        <div class="loading-container">
             <div class="spinner"></div>
             <div class="loading-text">Loading location...</div>
         </div>
@@ -261,18 +454,18 @@
 
 <!-- Game logic -->
 <script>
-    // ---------- Config ----------
-    const SMALL_SIZE = { w: 260, h: 180 };
-    const EXPANDED_SIZE = { w: 1200, h: 700 }; // Larger expanded size
-    let pano; // StreetViewPanorama
+    const SMALL_SIZE = {w: 260, h: 180};
+    const EXPANDED_SIZE = {w: 1200, h: 700};
+    let pano;
 
-    // ---------- State ----------
     let map, svService, guessMarker, trueMarker, line, phase = 'guess';
-    let trueLatLng = null; // google.maps.LatLng
-    let round = 0; let totalScore = 0;
-    let currentPanoId = null; let currentHeading = 0; let currentPitch = 0;
+    let trueLatLng = null;
+    let round = 0;
+    let totalScore = 0;
+    let currentPanoId = null;
+    let currentHeading = 0;
+    let currentPitch = 0;
 
-    // ---------- Elements ----------
     const roundNumEl = document.getElementById('roundNum');
     const totalScoreEl = document.getElementById('totalScore');
     const distanceKmEl = document.getElementById('distanceKm');
@@ -284,7 +477,6 @@
     const compassReadoutEl = document.getElementById('compassReadout');
     const loadingSpinner = document.getElementById('loadingSpinner');
 
-    // ---------- Loading Functions ----------
     function showLoading() {
         loadingSpinner.classList.add('show');
     }
@@ -293,19 +485,20 @@
         loadingSpinner.classList.remove('show');
     }
 
-    // ---------- Helpers ----------
     const randBetween = (min, max) => Math.random() * (max - min) + min;
     const deg2rad = d => d * Math.PI / 180;
+
     function haversineDistanceKm(a, b) {
-        const R = 6371; // km
+        const R = 6371;
         const dLat = deg2rad(b.lat() - a.lat());
         const dLng = deg2rad(b.lng() - a.lng());
         const lat1 = deg2rad(a.lat());
         const lat2 = deg2rad(b.lat());
-        const sinDLat = Math.sin(dLat/2), sinDLng = Math.sin(dLng/2);
-        const c = 2 * Math.atan2(Math.sqrt(sinDLat*sinDLat + Math.cos(lat1)*Math.cos(lat2)*sinDLng*sinDLng), Math.sqrt(1 - (sinDLat*sinDLat + Math.cos(lat1)*Math.cos(lat2)*sinDLng*sinDLng)));
+        const sinDLat = Math.sin(dLat / 2), sinDLng = Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng), Math.sqrt(1 - (sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng)));
         return R * c;
     }
+
     function scoreFromDistanceKm(d) {
         const s = Math.round(5000 * Math.exp(-d / 2000));
         return Math.max(0, Math.min(5000, s));
@@ -315,7 +508,7 @@
         phase = newPhase;
         if (phase === 'guess') {
             resultCard.classList.remove('show');
-            // Return map to normal size
+
             mapWrap.classList.remove('reveal');
             applyMapSize(false);
         } else {
@@ -325,7 +518,7 @@
 
     function applyMapSize(hovering = false) {
         if (mapWrap.classList.contains('reveal')) {
-            // Let CSS handle reveal size
+
             if (map) setTimeout(() => google.maps.event.trigger(map, 'resize'), 50);
             return;
         }
@@ -336,34 +529,46 @@
     }
 
     function clearGuess() {
-        if (guessMarker) { guessMarker.setMap(null); guessMarker = null; }
-        if (line) { line.setMap(null); line = null; }
+        if (guessMarker) {
+            guessMarker.setMap(null);
+            guessMarker = null;
+        }
+        if (line) {
+            line.setMap(null);
+            line = null;
+        }
     }
 
     function headingToCardinal(h) {
-        const dirs = ['N','NE','E','SE','S','SW','W','NW','N'];
+        const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N'];
         return dirs[Math.round(((h % 360) / 45))];
     }
 
     function updateCompass() {
-        // Rotate the needle container so needle points north relative to camera heading
-        // If camera faces north (0°), needle should point up (0°)
-        // If camera faces east (90°), needle should point left (-90°)
-        const rotation = currentHeading; // degrees
+        const rotation = currentHeading;
         needleContainer.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
-        compassReadoutEl.textContent = `${headingToCardinal(currentHeading)} (${Math.round((currentHeading%360+360)%360)}°)`;
+        compassReadoutEl.textContent = `${headingToCardinal(currentHeading)} (${Math.round((currentHeading % 360 + 360) % 360)}°)`;
     }
 
     function reveal() {
-        if (!guessMarker || !trueLatLng) return; // require a guess
-        // Draw true location
+        if (!guessMarker || !trueLatLng) return;
         if (trueMarker) trueMarker.setMap(null);
-        trueMarker = new google.maps.Marker({ position: trueLatLng, map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#10b981', fillOpacity: 1, strokeColor: '#0f766e', strokeWeight: 2 } });
+        trueMarker = new google.maps.Marker({
+            position: trueLatLng,
+            map,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 6,
+                fillColor: '#10b981',
+                fillOpacity: 1,
+                strokeColor: '#0f766e',
+                strokeWeight: 2
+            }
+        });
 
-        // Line between guess and true
         line = new google.maps.Polyline({
             map,
-            path: [ guessMarker.getPosition(), trueLatLng ],
+            path: [guessMarker.getPosition(), trueLatLng],
             geodesic: true,
             strokeOpacity: 1,
             strokeWeight: 3
@@ -376,28 +581,24 @@
         roundScoreEl.textContent = roundScore.toString();
         totalScoreEl.textContent = totalScore.toString();
 
-        // Expand map to large size and fit both points
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guessMarker.getPosition());
         bounds.extend(trueLatLng);
         mapWrap.classList.add('reveal');
-        // Give the CSS transition a moment, then resize & fit
         setTimeout(() => {
             google.maps.event.trigger(map, 'resize');
             map.fitBounds(bounds, 80);
-        }, 300); // slightly > .25s CSS transition
+        }, 300);
 
         setPhase('reveal');
     }
 
-    // Angle helpers
     const norm360 = d => (d % 360 + 360) % 360;
     const angDiff = (a, b) => {
         const d = Math.abs(norm360(a) - norm360(b));
         return d > 180 ? 360 - d : d;
     };
 
-    // Estimate road direction from links, then return a perpendicular heading (±90°)
     function perpendicularToRoad(links) {
         if (!links || links.length === 0) {
             return Math.floor(Math.random() * 360);
@@ -407,7 +608,11 @@
             for (let a = 0; a < links.length; a++) {
                 for (let b = a + 1; b < links.length; b++) {
                     const sep = angDiff(links[a].heading, links[b].heading);
-                    if (sep > best) { best = sep; i = a; j = b; }
+                    if (sep > best) {
+                        best = sep;
+                        i = a;
+                        j = b;
+                    }
                 }
             }
             const h1 = norm360(links[i].heading);
@@ -415,7 +620,7 @@
             let mid = norm360(h1 + angDiff(h1, h2) / 2);
             const d = norm360(h2 - h1);
             if (d > 180) mid = norm360(mid + 180);
-            const side = Math.random() < 0.5 ? -90 : 90; // perpendicular ±90°
+            const side = Math.random() < 0.5 ? -90 : 90;
             return norm360(mid + side);
         }
         const road = links[0].heading;
@@ -426,30 +631,32 @@
     function nextRound() {
         setPhase('guess');
         clearGuess();
-        if (trueMarker) { trueMarker.setMap(null); trueMarker = null; }
+        if (trueMarker) {
+            trueMarker.setMap(null);
+            trueMarker = null;
+        }
 
         map.setZoom(2);
-        map.setCenter({ lat: 20, lng: 0 });
-        round += 1; roundNumEl.textContent = String(round);
+        map.setCenter({lat: 20, lng: 0});
+        round += 1;
+        roundNumEl.textContent = String(round);
 
-        // Show loading spinner
         showLoading();
 
-        findRandomPano().then(({ panoId, location, links }) => {
+        findRandomPano().then(({panoId, location, links}) => {
             currentPanoId = panoId;
             trueLatLng = location.latLng;
 
             currentHeading = perpendicularToRoad(links);
-            currentPitch = Math.floor(randBetween(-5, 5)); // gentle tilt
+            currentPitch = Math.floor(randBetween(-5, 5));
 
             pano.setPano(currentPanoId);
-            pano.setZoom(0); // widest FOV
-            pano.setPov({ heading: currentHeading, pitch: currentPitch });
+            pano.setZoom(0);
+            pano.setPov({heading: currentHeading, pitch: currentPitch});
             pano.setVisible(true);
 
             updateCompass();
 
-            // Hide loading spinner after a small delay to ensure panorama has loaded
             setTimeout(() => {
                 hideLoading();
             }, 500);
@@ -461,20 +668,25 @@
     }
 
     async function findRandomPano() {
-        // Weighted random regions to bias toward land/roads
         const regions = [
             // [minLat, maxLat, minLng, maxLng, weight]
-            [-56, -10, -75, -35, 0.8],   // South America chunk
-            [-35,  37, -20,  55, 1.0],   // Africa + Middle East
-            [  5,  60, -130, -60, 1.0],  // North America
-            [ 30,  72,  -10,  40, 1.2],  // Europe
-            [ -45,  10, 110, 155, 0.7],  // Australia + NZ
-            [  5,  50,  65, 150, 1.0],   // Asia
+            [-56, -10, -75, -35, 0.8],
+            [-35, 37, -20, 55, 1.0],
+            [5, 60, -130, -60, 1.0],
+            [30, 72, -10, 40, 1.2],
+            [-45, 10, 110, 155, 0.7],
+            [5, 50, 65, 150, 1.0],
         ];
         const totalW = regions.reduce((s, r) => s + r[4], 0);
         const pick = Math.random() * totalW;
         let acc = 0, chosen = regions[0];
-        for (const r of regions) { acc += r[4]; if (pick <= acc) { chosen = r; break; } }
+        for (const r of regions) {
+            acc += r[4];
+            if (pick <= acc) {
+                chosen = r;
+                break;
+            }
+        }
 
         const maxTries = 40;
         for (let i = 0; i < maxTries; i++) {
@@ -482,11 +694,16 @@
             const lng = randBetween(chosen[2], chosen[3]);
             const loc = new google.maps.LatLng(lat, lng);
             try {
-                const data = await svGetPanorama({ location: loc, radius: 50000, source: google.maps.StreetViewSource.OUTDOOR });
+                const data = await svGetPanorama({
+                    location: loc,
+                    radius: 50000,
+                    source: google.maps.StreetViewSource.OUTDOOR
+                });
                 if (data && data.location && data.location.pano) {
-                    return { panoId: data.location.pano, location: data.location, links: data.links || [] };
+                    return {panoId: data.location.pano, location: data.location, links: data.links || []};
                 }
-            } catch (e) { /* keep trying */ }
+            } catch (e) { /* keep trying */
+            }
         }
         throw new Error('No pano found after many tries');
     }
@@ -514,18 +731,16 @@
         });
     }
 
-    // ---------- Init ----------
     window.initGame = function initGame() {
-        // Map
         map = new google.maps.Map(document.getElementById('map'), {
-            center: { lat: 20, lng: 0 },
+            center: {lat: 20, lng: 0},
             zoom: 2,
             mapTypeControl: false,
             streetViewControl: false,
             fullscreenControl: false,
             gestureHandling: 'greedy',
             draggableCursor: 'crosshair',
-            styles: null // default light mode
+            styles: null
         });
 
         svService = new google.maps.StreetViewService();
@@ -538,24 +753,23 @@
                 map,
                 icon: {
                     path: google.maps.SymbolPath.CIRCLE,
-                    scale: 6,                // size of the dot
-                    fillColor: '#f59e0b',    // amber
+                    scale: 6,
+                    fillColor: '#f59e0b',
                     fillOpacity: 1,
-                    strokeColor: '#7c2d12',  // darker ring
+                    strokeColor: '#7c2d12',
                     strokeWeight: 2
-                }
+                },
+                clickable: false
             });
         });
 
         initPanorama();
 
-        // Expand-on-hover behavior
         applyMapSize(false);
         mapWrap.addEventListener('mouseenter', () => applyMapSize(true));
         mapWrap.addEventListener('mouseleave', () => applyMapSize(false));
         clearBtn.addEventListener('click', () => clearGuess());
 
-        // Space bar to Guess/Next
         window.addEventListener('keydown', (ev) => {
             if (ev.code === 'Space') {
                 ev.preventDefault();
@@ -567,13 +781,11 @@
             }
         });
 
-        // Resize handling: keep map & pano happy
         window.addEventListener('resize', () => {
             applyMapSize(mapWrap.matches(':hover'));
             if (pano) pano.setPov(pano.getPov());
         });
 
-        // Start game
         nextRound();
     }
 </script>
