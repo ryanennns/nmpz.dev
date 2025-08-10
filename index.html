@@ -620,11 +620,11 @@
             let mid = norm360(h1 + angDiff(h1, h2) / 2);
             const d = norm360(h2 - h1);
             if (d > 180) mid = norm360(mid + 180);
-            const side = Math.random() < 0.5 ? -90 : 90;
+            const side = Math.random() < 0.5 ? -180 : 180;
             return norm360(mid + side);
         }
         const road = links[0].heading;
-        const side = Math.random() < 0.5 ? -90 : 90;
+        const side = Math.random() < 0.5 ? -180 : 180;
         return norm360(road + side);
     }
 
