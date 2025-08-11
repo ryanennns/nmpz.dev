@@ -389,7 +389,6 @@
     <div class="hud" id="hud">
         <span class="badge">Round <span id="roundNum">1</span></span>
         <span class="badge score">Total: <span id="totalScore">0</span></span>
-        <span class="badge" id="distanceBadge" style="display: none;">Distance: <span id="hudDistance">—</span> km</span>
     </div>
 
     <!-- Compass -->
@@ -473,8 +472,6 @@
     const needleContainer = document.getElementById('needleContainer');
     const compassReadoutEl = document.getElementById('compassReadout');
     const loadingSpinner = document.getElementById('loadingSpinner');
-    const distanceBadge = document.getElementById('distanceBadge');
-    const hudDistanceEl = document.getElementById('hudDistance');
 
     function showLoading() {
         loadingSpinner.classList.add('show');
@@ -507,13 +504,11 @@
         phase = newPhase;
         if (phase === 'guess') {
             resultCard.classList.remove('show');
-            distanceBadge.style.display = 'none';
 
             mapWrap.classList.remove('reveal');
             applyMapSize(false);
         } else {
             resultCard.classList.add('show');
-            distanceBadge.style.display = 'block';
         }
     }
 
@@ -597,18 +592,16 @@
         const roundScore = scoreFromDistanceKm(distKm);
         totalScore += roundScore;
         distanceKmEl.textContent = distKm.toFixed(1);
-        hudDistanceEl.textContent = distKm.toFixed(1);
         roundScoreEl.textContent = roundScore.toString();
         totalScoreEl.textContent = totalScore.toString();
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guessMarker.getPosition());
         bounds.extend(trueLatLng);
-        mapWrap.classList.add('reveal');
         setTimeout(() => {
             google.maps.event.trigger(map, 'resize');
             map.fitBounds(bounds, 80);
-        }, 300);
+        }, 50);
 
         setPhase('reveal');
     }
