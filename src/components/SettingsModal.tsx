@@ -42,7 +42,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               ✕
             </button>
           </div>
-          <p className="text-sm text-slate-300">Settings panel coming soon...</p>
+          <div className="space-y-4">
+            <div className="border-t border-slate-700 pt-4 mt-2">
+              <h4 className="font-medium text-sm mb-2">API Key</h4>
+              <button 
+                onClick={() => {
+                  localStorage.removeItem("gmaps_api_key");
+                  window.location.reload();
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md text-sm transition-colors"
+              >
+                Clear API Key & Restart
+              </button>
+              <p className="text-xs text-slate-400 mt-2">
+                This will remove your saved API key and refresh the page.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </>

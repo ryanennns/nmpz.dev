@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { LoadingSpinner } from "./LoadingSpinner.tsx";
 import { GameHud } from "./GameHud.tsx";
 import { SettingsModal } from "./SettingsModal.tsx";
+import { Compass } from "./Compass.tsx";
 
 // Type definitions for Google Maps
 declare global {
@@ -29,6 +30,8 @@ interface GoogleMapsMap {
   setCenter(position: { lat: number; lng: number }): void;
   addListener(event: string, callback: (e: any) => void): void;
   fitBounds(bounds: any, padding: number): void;
+
+  setOptions(param: { draggableCursor: string }): void;
 }
 
 interface GoogleMapsPanorama {
@@ -78,6 +81,8 @@ const GeoGuessrGame: React.FC = () => {
   const lineRef = useRef<GoogleMapsPolyline | null>(null);
   const trueLatLngRef = useRef<GoogleMapsLatLng | null>(null);
   const currentPanoIdRef = useRef<string | null>(null);
+  const phaseRef = useRef<GamePhase>("guess");
+  const showSettingsRef = useRef<boolean>(false);
 
   // Constants
   const REGIONS: Region[] = [
@@ -233,7 +238,8 @@ const GeoGuessrGame: React.FC = () => {
       // Add click listener to map
       mapInstanceRef.current?.addListener("click", (e: any) => {
         // Don't allow guesses if settings modal is open or not in guess phase
-        if (phase !== "guess" || showSettings) {
+        // Use refs to ensure we have the latest values
+        if (phaseRef.current !== "guess" || showSettingsRef.current) {
           return;
         }
 
@@ -262,7 +268,7 @@ const GeoGuessrGame: React.FC = () => {
       console.error("Failed to initialize Google Maps:", error);
       alert("Failed to load Google Maps. Please check your API key.");
     }
-  }, [apiKey, phase, showSettings]);
+  }, [apiKey]);
 
   // Find random panorama
   const findRandomPano = async (): Promise<{
@@ -457,6 +463,24 @@ const GeoGuessrGame: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [phase, showSettings]);
 
+  // Update map cursor and click behavior based on phase
+  useEffect(() => {
+    // Update phaseRef to always have the current phase value
+    phaseRef.current = phase;
+
+    if (mapInstanceRef.current) {
+      // Update cursor style based on phase
+      mapInstanceRef.current.setOptions({
+        draggableCursor: phase === "guess" ? "crosshair" : "default"
+      });
+    }
+  }, [phase]);
+
+  // Update showSettingsRef whenever showSettings changes
+  useEffect(() => {
+    showSettingsRef.current = showSettings;
+  }, [showSettings]);
+
 
   useEffect(() => {
     console.log(roundHistory.map((rh) => [rh.lat(), rh.lng()]));
@@ -498,7 +522,7 @@ const GeoGuessrGame: React.FC = () => {
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="bg-slate-900 p-8 rounded-lg shadow-2xl max-w-md w-full">
           <h1 className="text-2xl font-bold text-white mb-6 text-center">
-            GeoGuessr Clone
+            nmpz.dev
           </h1>
           <div className="space-y-4">
             <div>
@@ -506,7 +530,6 @@ const GeoGuessrGame: React.FC = () => {
                 Google Maps API Key
               </label>
               <input
-                type="password"
                 value={apiKeyInput}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -567,6 +590,7 @@ const GeoGuessrGame: React.FC = () => {
 
       {/* Compass */}
       <div className="fixed right-4 top-4 z-30 flex flex-col items-center gap-2">
+        <Compass heading={currentHeading} />
         <div className="bg-slate-900/85 backdrop-blur-md px-3 py-1 rounded-full text-sm font-bold text-white min-w-20 text-center shadow-2xl border border-slate-200/10">
           {headingToCardinal(currentHeading)} (
           {Math.round(((currentHeading % 360) + 360) % 360)}°)
@@ -589,7 +613,9 @@ const GeoGuessrGame: React.FC = () => {
 
       {/* Map */}
       <div
-        className={`fixed right-4 bottom-4 z-40 bg-white rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ease-out hover:cursor-crosshair ${
+        className={`fixed right-4 bottom-4 z-40 bg-white rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ease-out ${
+          phase === "guess" ? "hover:cursor-crosshair" : ""
+        } ${
           phase === "reveal"
             ? "w-[65vw] h-[70vh] max-w-4xl max-h-[700px]"
             : "w-64 h-44"
