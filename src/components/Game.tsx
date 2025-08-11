@@ -63,6 +63,7 @@ const GeoGuessrGame: React.FC = () => {
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [distance, setDistance] = useState<number>(0);
   const [roundScore, setRoundScore] = useState<number>(0);
+  const [roundHistory, setRoundHistory] = useState<GoogleMapsLatLng[]>([]);
 
   // Refs for Google Maps objects
   const mapRef = useRef<HTMLDivElement>(null);
@@ -229,7 +230,9 @@ const GeoGuessrGame: React.FC = () => {
 
       // Add click listener to map
       mapInstanceRef.current?.addListener("click", (e: any) => {
-        if (phase !== "guess") return;
+        if (phase !== "guess") {
+          return;
+        }
 
         if (guessMarkerRef.current) {
           guessMarkerRef.current.setMap(null);
@@ -377,7 +380,9 @@ const GeoGuessrGame: React.FC = () => {
     )
       return;
 
-    if (trueMarkerRef.current) trueMarkerRef.current.setMap(null);
+    if (trueMarkerRef.current) {
+      trueMarkerRef.current.setMap(null);
+    }
 
     trueMarkerRef.current = new window.google.maps.Marker({
       position: trueLatLngRef.current,
@@ -393,6 +398,11 @@ const GeoGuessrGame: React.FC = () => {
       title: "Click to view in Google Street View",
       clickable: true,
     });
+
+    setRoundHistory((previous) => [
+      ...previous,
+      ...(trueLatLngRef.current !== null ? [trueLatLngRef.current] : []),
+    ]);
 
     lineRef.current = new window.google.maps.Polyline({
       map: mapInstanceRef.current,
@@ -440,6 +450,10 @@ const GeoGuessrGame: React.FC = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [phase]);
+
+  useEffect(() => {
+    console.log(roundHistory.map((rh) => [rh.lat(), rh.lng()]));
+  }, [roundHistory]);
 
   // Start game when API key is provided
   useEffect(() => {
