@@ -389,6 +389,7 @@
     <div class="hud" id="hud">
         <span class="badge">Round <span id="roundNum">1</span></span>
         <span class="badge score">Total: <span id="totalScore">0</span></span>
+        <span class="badge" id="distanceBadge" style="display: none;">Distance: <span id="hudDistance">—</span> km</span>
     </div>
 
     <!-- Compass -->
@@ -469,10 +470,11 @@
     const roundScoreEl = document.getElementById('roundScore');
     const resultCard = document.getElementById('resultCard');
     const mapWrap = document.getElementById('mapWrap');
-    const clearBtn = document.getElementById('clearBtn');
     const needleContainer = document.getElementById('needleContainer');
     const compassReadoutEl = document.getElementById('compassReadout');
     const loadingSpinner = document.getElementById('loadingSpinner');
+    const distanceBadge = document.getElementById('distanceBadge');
+    const hudDistanceEl = document.getElementById('hudDistance');
 
     function showLoading() {
         loadingSpinner.classList.add('show');
@@ -505,11 +507,13 @@
         phase = newPhase;
         if (phase === 'guess') {
             resultCard.classList.remove('show');
+            distanceBadge.style.display = 'none';
 
             mapWrap.classList.remove('reveal');
             applyMapSize(false);
         } else {
             resultCard.classList.add('show');
+            distanceBadge.style.display = 'block';
         }
     }
 
@@ -547,6 +551,14 @@
         compassReadoutEl.textContent = `${headingToCardinal(currentHeading)} (${Math.round((currentHeading % 360 + 360) % 360)}°)`;
     }
 
+    function openGoogleMapsStreetView(lat, lng, panoId) {
+        window.open(
+            panoId ?
+                `https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(panoId)}` :
+                `https://www.google.com/maps/@${lat},${lng},3a,75y,90t/data=!3m4!1e1!3m2!1s0:0!2e0`, '_blank'
+        );
+    }
+
     function reveal() {
         if (!guessMarker || !trueLatLng) return;
         if (trueMarker) trueMarker.setMap(null);
@@ -560,13 +572,23 @@
                 fillOpacity: 1,
                 strokeColor: '#0f766e',
                 strokeWeight: 2
-            }
+            },
+            title: 'Click to view in Google Street View',
+            clickable: true
+        });
+
+        trueMarker.addListener('click', () => {
+            openGoogleMapsStreetView(
+                trueLatLng.lat(),
+                trueLatLng.lng(),
+                currentPanoId
+            );
         });
 
         line = new google.maps.Polyline({
             map,
             path: [guessMarker.getPosition(), trueLatLng],
-            geodesic: true,
+            geodesic: false,
             strokeOpacity: 1,
             strokeWeight: 3
         });
@@ -575,6 +597,7 @@
         const roundScore = scoreFromDistanceKm(distKm);
         totalScore += roundScore;
         distanceKmEl.textContent = distKm.toFixed(1);
+        hudDistanceEl.textContent = distKm.toFixed(1);
         roundScoreEl.textContent = roundScore.toString();
         totalScoreEl.textContent = totalScore.toString();
 
