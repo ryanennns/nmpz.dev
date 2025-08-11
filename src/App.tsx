@@ -1,4 +1,4 @@
-import './App.css'
+import "./App.css";
 import GeoGuessrGame from "./components/Game.tsx";
 
 function App() {
@@ -6,7 +6,7 @@ function App() {
     <>
       <GeoGuessrGame />
     </>
-  )
+  );
 }
 
-export default App
+export default App;

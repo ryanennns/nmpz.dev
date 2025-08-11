@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { LoadingSpinner } from "./LoadingSpinner.tsx";
+import { GameHud } from "./GameHud.tsx";
 
 // Type definitions for Google Maps
 declare global {
@@ -50,7 +52,7 @@ type GamePhase = "guess" | "reveal";
 
 const GeoGuessrGame: React.FC = () => {
   // Game state
-  const [round, setRound] = useState<number>(0);
+  const [rounds, setRounds] = useState<number>(0);
   const [totalScore, setTotalScore] = useState<number>(0);
   const [phase, setPhase] = useState<GamePhase>("guess");
   const [currentHeading, setCurrentHeading] = useState<number>(0);
@@ -313,7 +315,7 @@ const GeoGuessrGame: React.FC = () => {
     throw new Error("No pano found after many tries");
   };
 
-  // Next round
+  // Next rounds
   const nextRound = async (): Promise<void> => {
     if (!mapInstanceRef.current || !panoInstanceRef.current) return;
 
@@ -338,7 +340,7 @@ const GeoGuessrGame: React.FC = () => {
     mapInstanceRef.current.setZoom(2);
     mapInstanceRef.current.setCenter({ lat: 20, lng: 0 });
 
-    setRound((prev) => prev + 1);
+    setRounds((prev) => prev + 1);
     setLoading(true);
 
     try {
@@ -466,13 +468,9 @@ const GeoGuessrGame: React.FC = () => {
     setApiKeyInput(e.target.value);
   };
 
-  const handleMouseEnter = (): void => {
-    setMapExpanded(true);
-  };
+  const handleMouseEnter = () => setMapExpanded(true);
 
-  const handleMouseLeave = (): void => {
-    setMapExpanded(false);
-  };
+  const handleMouseLeave = () => setMapExpanded(false);
 
   if (!apiKey) {
     return (
@@ -514,55 +512,21 @@ const GeoGuessrGame: React.FC = () => {
       {/* Street View Panorama */}
       <div className="absolute inset-0">
         <div ref={panoRef} className="w-full h-full" />
+        {/* Transparent overlay that intercepts all input */}
+        <div
+          className="absolute inset-0 z-10"
+          style={{ cursor: "default" }}
+          aria-hidden="true"
+        />
       </div>
 
-      {/* Loading Spinner */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-3 border-green-500/30 border-t-green-500 rounded-full animate-spin"></div>
-            <div className="mt-4 text-sm font-semibold text-white">
-              Loading location...
-            </div>
-          </div>
-        </div>
-      )}
+      {loading && <LoadingSpinner />}
 
       {/* HUD */}
-      <div className="fixed left-4 top-4 flex items-center gap-2 z-20 bg-slate-900/70 backdrop-blur-md px-3 py-2 rounded-xl shadow-2xl">
-        <span className="bg-slate-700 text-white rounded-full px-3 py-1 text-sm font-bold">
-          Round {round}
-        </span>
-        <span className="bg-slate-700 text-white rounded-full px-3 py-1 text-sm font-bold">
-          Total: {totalScore}
-        </span>
-      </div>
+      <GameHud totalScore={totalScore} rounds={rounds} />
 
       {/* Compass */}
       <div className="fixed right-4 top-4 z-30 flex flex-col items-center gap-2">
-        <div className="relative w-20 h-20 rounded-full bg-slate-900/90 border-2 border-slate-200/30 shadow-2xl backdrop-blur-md">
-          <div
-            className="absolute top-1/2 left-1/2 w-0.5 h-7 transform -translate-x-1/2 -translate-y-full origin-bottom transition-transform duration-300 ease-out"
-            style={{
-              transform: `translate(-50%, -100%) rotate(${currentHeading}deg)`,
-            }}
-          >
-            <div className="w-full h-full bg-gradient-to-t from-gray-600 to-red-500 rounded-t"></div>
-            <div className="absolute -bottom-1 left-1/2 w-1.5 h-1.5 bg-gray-800 rounded-full transform -translate-x-1/2"></div>
-          </div>
-          <div className="absolute top-1 left-1/2 transform -translate-x-1/2 text-xs font-bold text-red-400">
-            N
-          </div>
-          <div className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs font-bold text-white">
-            E
-          </div>
-          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white">
-            S
-          </div>
-          <div className="absolute left-1 top-1/2 transform -translate-y-1/2 text-xs font-bold text-white">
-            W
-          </div>
-        </div>
         <div className="bg-slate-900/85 backdrop-blur-md px-3 py-1 rounded-full text-sm font-bold text-white min-w-20 text-center shadow-2xl border border-slate-200/10">
           {headingToCardinal(currentHeading)} (
           {Math.round(((currentHeading % 360) + 360) % 360)}°)
@@ -570,7 +534,7 @@ const GeoGuessrGame: React.FC = () => {
       </div>
 
       {/* Result Card */}
-      {phase === "reveal" && (
+      {
         <div className="fixed right-4 top-32 z-30 bg-slate-900/85 backdrop-blur-md p-3 rounded-xl shadow-2xl">
           <div className="flex gap-2 items-baseline">
             <b className="text-sm text-white">Distance:</b>
@@ -581,7 +545,7 @@ const GeoGuessrGame: React.FC = () => {
             <span className="text-white">{roundScore}</span>
           </div>
         </div>
-      )}
+      }
 
       {/* Map */}
       <div
@@ -595,31 +559,9 @@ const GeoGuessrGame: React.FC = () => {
         style={{
           width: phase === "reveal" ? "65vw" : mapExpanded ? "65vw" : "20vw",
           height: phase === "reveal" ? "70vh" : mapExpanded ? "80vh" : "20vh",
-          maxWidth: phase === "reveal" ? "900px" : "none",
-          maxHeight: phase === "reveal" ? "700px" : "none",
         }}
       >
         <div ref={mapRef} className="w-full h-full" />
-      </div>
-
-      {/* Controls */}
-      <div className="fixed left-1/2 transform -translate-x-1/2 bottom-5 z-25 flex gap-2">
-        {phase === "guess" ? (
-          <button
-            onClick={reveal}
-            disabled={!guessMarkerRef.current}
-            className="bg-green-500 text-white px-6 py-3 rounded-full font-bold tracking-wide shadow-2xl transition-all duration-75 hover:bg-green-600 active:translate-y-px active:scale-98 disabled:bg-gray-600 disabled:cursor-not-allowed"
-          >
-            GUESS
-          </button>
-        ) : (
-          <button
-            onClick={nextRound}
-            className="bg-amber-500 text-gray-900 px-6 py-3 rounded-full font-bold tracking-wide shadow-2xl transition-all duration-75 hover:bg-amber-600 active:translate-y-px active:scale-98"
-          >
-            NEXT
-          </button>
-        )}
       </div>
     </div>
   );
