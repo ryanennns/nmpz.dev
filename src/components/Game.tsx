@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { LoadingSpinner } from "./LoadingSpinner.tsx";
 import { GameHud } from "./GameHud.tsx";
+import { SettingsModal } from "./SettingsModal.tsx";
 
 // Type definitions for Google Maps
 declare global {
@@ -64,6 +65,7 @@ const GeoGuessrGame: React.FC = () => {
   const [distance, setDistance] = useState<number>(0);
   const [roundScore, setRoundScore] = useState<number>(0);
   const [roundHistory, setRoundHistory] = useState<GoogleMapsLatLng[]>([]);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
 
   // Refs for Google Maps objects
   const mapRef = useRef<HTMLDivElement>(null);
@@ -230,7 +232,8 @@ const GeoGuessrGame: React.FC = () => {
 
       // Add click listener to map
       mapInstanceRef.current?.addListener("click", (e: any) => {
-        if (phase !== "guess") {
+        // Don't allow guesses if settings modal is open or not in guess phase
+        if (phase !== "guess" || showSettings) {
           return;
         }
 
@@ -259,7 +262,7 @@ const GeoGuessrGame: React.FC = () => {
       console.error("Failed to initialize Google Maps:", error);
       alert("Failed to load Google Maps. Please check your API key.");
     }
-  }, [apiKey, phase]);
+  }, [apiKey, phase, showSettings]);
 
   // Find random panorama
   const findRandomPano = async (): Promise<{
@@ -439,17 +442,21 @@ const GeoGuessrGame: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.code === "Space") {
         e.preventDefault();
-        if (phase === "guess") {
-          reveal();
-        } else {
-          nextRound();
+        // Only process spacebar actions if settings modal is closed
+        if (!showSettings) {
+          if (phase === "guess") {
+            reveal();
+          } else {
+            nextRound();
+          }
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [phase]);
+  }, [phase, showSettings]);
+
 
   useEffect(() => {
     console.log(roundHistory.map((rh) => [rh.lat(), rh.lng()]));
@@ -521,6 +528,11 @@ const GeoGuessrGame: React.FC = () => {
     );
   }
 
+  // Settings handler
+  const toggleSettings = (): void => {
+    setShowSettings(!showSettings);
+  };
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       {/* Street View Panorama */}
@@ -538,6 +550,20 @@ const GeoGuessrGame: React.FC = () => {
 
       {/* HUD */}
       <GameHud totalScore={totalScore} rounds={rounds} />
+
+      {/* Settings Gear */}
+      <div className="fixed left-4 bottom-4 z-40">
+        <button 
+          onClick={toggleSettings}
+          className="bg-slate-900/85 backdrop-blur-md p-3 rounded-full text-white shadow-2xl hover:bg-slate-800/85 transition-colors border border-slate-200/10"
+          title="Settings"
+        >
+          <span className="text-xl">⚙️</span>
+        </button>
+      </div>
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={showSettings} onClose={toggleSettings} />
 
       {/* Compass */}
       <div className="fixed right-4 top-4 z-30 flex flex-col items-center gap-2">
