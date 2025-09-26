@@ -5,9 +5,9 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ 
-  isOpen, 
-  onClose 
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen,
+  onClose,
 }) => {
   // Handle escape key for closing settings modal
   useEffect(() => {
@@ -26,16 +26,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <>
       {/* Modal Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-50"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
       {/* Modal Content */}
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="bg-slate-900/95 backdrop-blur-md p-6 rounded-xl shadow-2xl border border-slate-200/10 text-white max-w-md w-full mx-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-lg">Settings</h3>
-            <button 
+            <button
               onClick={onClose}
               className="text-slate-400 hover:text-white transition-colors"
             >
@@ -45,7 +42,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="space-y-4">
             <div className="border-t border-slate-700 pt-4 mt-2">
               <h4 className="font-medium text-sm mb-2">API Key</h4>
-              <button 
+              <button
                 onClick={() => {
                   localStorage.removeItem("gmaps_api_key");
                   window.location.reload();

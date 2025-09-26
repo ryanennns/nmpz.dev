@@ -397,15 +397,26 @@ const GeoGuessrGame: React.FC = () => {
       position: trueLatLngRef.current,
       map: mapInstanceRef.current,
       icon: {
-        path: window.google.maps.SymbolPath.CIRCLE,
-        scale: 6,
-        fillColor: "#10b981",
-        fillOpacity: 1,
-        strokeColor: "#0f766e",
-        strokeWeight: 2,
+        url:
+          "data:image/svg+xml;utf-8," +
+          encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+          <path d="M256 0C167 0 96 71 96 160c0 128 160 352 160 352s160-224 160-352c0-89-71-160-160-160z"
+                fill="#e53935" stroke="#b71c1c" stroke-width="16"/>
+          <circle cx="256" cy="200" r="64" fill="#b71c1c"/>
+        </svg>
+      `),
+        scaledSize: new window.google.maps.Size(36, 44), // taller box, narrower width
+        anchor: new window.google.maps.Point(18, 44), // bottom-center
       },
       title: "Click to view in Google Street View",
-      clickable: true,
+    });
+
+    window.google.maps.event.addListener(trueMarkerRef.current, "click", () => {
+      const lat = trueLatLngRef.current!.lat();
+      const lng = trueLatLngRef.current!.lng();
+      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+      window.open(url, "_blank");
     });
 
     setRoundHistory((previous) => [
@@ -417,8 +428,19 @@ const GeoGuessrGame: React.FC = () => {
       map: mapInstanceRef.current,
       path: [guessMarkerRef.current.getPosition(), trueLatLngRef.current],
       geodesic: false,
-      strokeOpacity: 1,
+      strokeOpacity: 0, // hide the base stroke
       strokeWeight: 3,
+      icons: [
+        {
+          icon: {
+            path: "M 0,-1 0,1", // short vertical line segment = dash
+            strokeOpacity: 1,
+            scale: 3,
+          },
+          offset: "0",
+          repeat: "20px", // distance between dashes
+        },
+      ],
     });
 
     const distKm = haversineDistanceKm(
@@ -471,7 +493,7 @@ const GeoGuessrGame: React.FC = () => {
     if (mapInstanceRef.current) {
       // Update cursor style based on phase
       mapInstanceRef.current.setOptions({
-        draggableCursor: phase === "guess" ? "crosshair" : "default"
+        draggableCursor: phase === "guess" ? "crosshair" : "default",
       });
     }
   }, [phase]);
@@ -480,7 +502,6 @@ const GeoGuessrGame: React.FC = () => {
   useEffect(() => {
     showSettingsRef.current = showSettings;
   }, [showSettings]);
-
 
   useEffect(() => {
     console.log(roundHistory.map((rh) => [rh.lat(), rh.lng()]));
@@ -576,7 +597,7 @@ const GeoGuessrGame: React.FC = () => {
 
       {/* Settings Gear */}
       <div className="fixed left-4 bottom-4 z-40">
-        <button 
+        <button
           onClick={toggleSettings}
           className="bg-slate-900/85 backdrop-blur-md p-3 rounded-full text-white shadow-2xl hover:bg-slate-800/85 transition-colors border border-slate-200/10"
           title="Settings"

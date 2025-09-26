@@ -7,14 +7,14 @@ interface CompassProps {
 export const Compass: React.FC<CompassProps> = ({ heading }) => {
   // Normalize the heading to ensure it's between 0-360
   const normalizedHeading = ((heading % 360) + 360) % 360;
-  
+
   return (
     <div className="relative w-16 h-16 mb-2">
       {/* Compass background circle */}
       <div className="absolute inset-0 rounded-full bg-slate-900/85 backdrop-blur-md border border-slate-200/10 shadow-2xl"></div>
-      
+
       {/* Compass needle */}
-      <div 
+      <div
         className="absolute inset-0 flex items-center justify-center"
         style={{ transform: `rotate(${normalizedHeading}deg)` }}
       >
